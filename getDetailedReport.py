@@ -1,6 +1,6 @@
 import requests
 
-def get_detailed_report(API_KEY, WORKSPACE_ID, USER_ID, headers, start_date, end_date):
+def get_detailed_report(API_KEY, WORKSPACE_ID, USER_ID, headers, start_date, end_date, show_output):
         
     url = (
         f"https://reports.api.clockify.me/v1/"
@@ -35,7 +35,8 @@ def get_detailed_report(API_KEY, WORKSPACE_ID, USER_ID, headers, start_date, end
 
     tracked_seconds = 0
 
-    print(f"Gefundende Zeiteinräge:")
+    if show_output:
+        print(f"Gefundende Zeiteinräge:")
 
     for entry in report["timeentries"]:
         # Nur den ausgewählten Benutzer berücksichtigen
@@ -46,15 +47,11 @@ def get_detailed_report(API_KEY, WORKSPACE_ID, USER_ID, headers, start_date, end
         duration = entry["timeInterval"]["duration"]
         working_date = entry["timeInterval"]["start"].split("T")[0]
 
-        print(
-            f"Person: {user} | Datum: {working_date} | Dauer: {duration / 3600:.2f} Stunden"
-        )
+        if show_output:
+            print(f"Person: {user} | Datum: {working_date} | Dauer: {duration / 3600:.2f} Stunden")
 
         tracked_seconds += duration
 
     tracked_hours = tracked_seconds / 3600
 
-    print(
-        f"\nErgebniss Auswertung\nGetrackte Zeit: {tracked_hours:.2f} Stunden"
-    )
     return tracked_hours
