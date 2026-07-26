@@ -2,9 +2,7 @@ import requests
 from datetime import datetime, timedelta
 
 
-def get_detailed_report(
-    WORKSPACE_ID, USERNAME, headers, start_date, end_date, show_output
-):
+def get_detailed_report(WORKSPACE_ID, USERNAME, headers, start_date, end_date):
 
     url = (
         f"https://reports.api.clockify.me/v1/"
