@@ -5,24 +5,71 @@ from datetime import datetime, date
 def get_date_range():
     while True:
         print("\nZeitraum auswählen:")
-        print("1 - Auswertung über einen Monat")
-        print("2 - Auswertung über individuellen Zeitraum")
+        print("1 - Auswertung über individuellen Zeitraum")
+        print("2 - Auswertung über einen Monat")
+        print("3 - Auswertung über ein Jahr")
+        print(
+            "4 - Total Gleit- und Ferienzeit bis zum aktuellen Datum (Startdatum 01.01.2025)"
+        )
 
-        choice = input("Auswahl (1/2): ")
+        choice = input("Auswahl (1-4): ")
 
         if choice == "1":
-            return get_month_range()
+            return get_custom_range()
 
         elif choice == "2":
-            return get_custom_range()
+            return get_month_range()
+
+        elif choice == "3":
+            return get_year_range()
+
+        elif choice == "4":
+            return get_range()
 
         else:
             print("FEHLER: Bitte 1 oder 2 auswählen.")
 
 
+def get_custom_range():
+    today = date.today()
+    while True:
+        try:
+            start_input = input("Startdatum eingeben (YYYY-MM-DD): ")
+            end_input = input("Enddatum eingeben (YYYY-MM-DD): ")
+
+            start = datetime.strptime(start_input, "%Y-%m-%d").date()
+            end = datetime.strptime(end_input, "%Y-%m-%d").date()
+
+            # Test: Jahre vor 2025 nicht erlaubt
+            if start.year < 2025:
+                print("FEHLER: Es existieren keine Daten vor 2025.")
+                continue
+
+            # Test: Startdatum nach Enddatum
+            if start > end:
+                print("FEHLER: Startdatum liegt nach Enddatum.")
+                continue
+
+            # Prüfen, ob ein Datum in der Zukunft liegt
+            if start > today or end > today:
+                print("FEHLER: Eine Auswertung für die Zukunft ist nicht möglich.")
+                continue
+
+            start_date = f"{start_input}T00:00:00Z"
+            end_date = f"{end_input}T23:59:59Z"
+
+            return start_date, end_date
+
+        except ValueError:
+            print(
+                "FEHLER: Ungültiges Datum."
+                "Prüfe Monat (1-12), gültige Tage des Monats und Format YYYY-MM-DD."
+            )
+
+
 def get_month_range():
     today = date.today()
-    #Jahr abfragen
+    # Jahr abfragen
     while True:
         try:
             year = int(input("Jahr eingeben (YYYY): "))
@@ -30,21 +77,21 @@ def get_month_range():
             if year > today.year:
                 print("FEHLER: Eine Auswertung für die Zukunft ist nicht möglich.")
                 continue
-            
+
             # Test, ob das gewählte Jahr zu weit in der Vergangenheit liegt
             if year < 2024:
                 print("FEHLER: Ungültiges Jahr." "Es existieren keine Daten vor 2024.")
                 continue
             break
-        
+
         except ValueError:
             print("FEHLER: Ungültige Eingabe.")
 
-    #Monat abfragen
+    # Monat abfragen
     while True:
-        try:    
+        try:
             month = int(input("Monat eingeben (1-12): "))
-            #Test, ob der Monat zwischen 1 und 12 liegt
+            # Test, ob der Monat zwischen 1 und 12 liegt
             if month < 1 or month > 12:
                 print("FEHLER: Monat muss zwischen 1 und 12 liegen.")
                 continue
@@ -57,44 +104,45 @@ def get_month_range():
 
         except ValueError:
             print("FEHLER: Ungültige Eingabe.")
-                
+
     start_date = f"{year}-{month:02d}-01T00:00:00Z"
     last_day = calendar.monthrange(year, month)[1]
-    end_date = (f"{year}-{month:02d}-{last_day}T23:59:59Z")
+    end_date = f"{year}-{month:02d}-{last_day}T23:59:59Z"
     return start_date, end_date
 
-def get_custom_range():
+
+def get_year_range():
     today = date.today()
     while True:
         try:
-            start_input = input("Startdatum eingeben (YYYY-MM-DD): ")
-            end_input = input("Enddatum eingeben (YYYY-MM-DD): ")
+            year = int(input("Jahr eingeben (YYYY): "))
 
-            start = datetime.strptime(start_input,"%Y-%m-%d").date()
-            end = datetime.strptime(end_input,"%Y-%m-%d").date()
+            if year == today.year:
+                end_date = f"{today.strftime('%Y-%m-%d')}T23:59:59Z"
+            else:
+                end_date = f"{year}-12-31T23:59:59Z"
 
-            # Test: Jahre vor 2024 nicht erlaubt
-            if start.year < 2024:
-                print("FEHLER: Es existieren keine Daten vor 2024.")
+            # Test, ob das gewählte Jahr in der Zukunft liegt
+            if year > today.year:
+                print(
+                    "FEHLER: Eine Auswertung ist nur für abgeschlossene Jahre möglich."
+                )
                 continue
 
-            # Test: Startdatum nach Enddatum
-            if start > end:
-                print("FEHLER: Startdatum liegt nach Enddatum.")
+            # Test, ob das gewählte Jahr zu weit in der Vergangenheit liegt
+            if year < 2024:
+                print("FEHLER: Ungültiges Jahr." "Es existieren keine Daten vor 2024.")
                 continue
-            
-            # Prüfen, ob ein Datum in der Zukunft liegt
-            if start > today or end > today:
-                print("FEHLER: Eine Auswertung für die Zukunft ist nicht möglich.")
-                continue
-
-            start_date = (f"{start_input}T00:00:00Z")
-            end_date = (f"{end_input}T23:59:59Z")
-
-            return start_date, end_date
+            break
 
         except ValueError:
-            print(
-                "FEHLER: Ungültiges Datum."
-                "Prüfe Monat (1-12), gültige Tage des Monats und Format YYYY-MM-DD."
-            )
+            print("FEHLER: Ungültige Eingabe.")
+
+    start_date = f"{year}-01-01T00:00:00Z"
+    return start_date, end_date
+
+
+def get_range():
+    start_date = f"2025-01-01T00:00:00Z"
+    end_date = f"{date.today().strftime('%Y-%m-%d')}T23:59:59Z"
+    return start_date, end_date

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 
 def get_detailed_report(
-    API_KEY, WORKSPACE_ID, USER_ID, headers, start_date, end_date, show_output
+    WORKSPACE_ID, USERNAME, headers, start_date, end_date, show_output
 ):
 
     url = (
@@ -15,67 +15,107 @@ def get_detailed_report(
     end = datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%SZ")
 
     all_entries = []
+    all_booked_vacation_hours = []
+    print(f"\nBerechne Zeit", end="")
 
-    current = start
+    # Zeitraum größer als 1 Monat?
+    if (end.year - start.year) * 12 + (end.month - start.month) > 0:
 
-    while current <= end:
+        current = start.replace(day=1, hour=0, minute=0, second=0)
 
-        day_start = current.strftime("%Y-%m-%dT00:00:00Z")
-        day_end = current.strftime("%Y-%m-%dT23:59:59Z")
+        while current <= end:
+            print(".", end="")
+            # Monatsende bestimmen
+            if current.month == 12:
+                next_month = current.replace(year=current.year + 1, month=1)
+            else:
+                next_month = current.replace(month=current.month + 1)
 
-        payload = {
-            "dateRangeStart": day_start,
-            "dateRangeEnd": day_end,
-            "detailedFilter": {"users": [USER_ID]},
-            "page": 1,
-            "pageSize": 50,
-        }
+            month_end = next_month - timedelta(seconds=1)
 
-        response = requests.post(url, headers=headers, json=payload)
+            # Begrenzung auf gewünschten Zeitraum
+            period_start = max(current, start)
+            period_end = min(month_end, end)
 
-        if response.status_code != 200:
-            print(response.text)
-            return 0
+            # print(f"\nMonatlicher Zeitraum: " f"{period_start} - {period_end}")
 
-        report = response.json()
+            entries = fetch_entries(url, headers, period_start, period_end, USERNAME)
+            all_entries.extend(entries)
+            current = next_month
 
-        entries = report.get("timeentries", [])
+    else:
+        all_entries = fetch_entries(url, headers, start, end, USERNAME)
 
-        if entries:
-            print(current.strftime("%Y-%m-%d"), ":", len(entries), "Einträge")
+    # print("\nGesamte Einträge:", len(all_entries))
 
-        all_entries.extend(entries)
+    # if show_output:
+    #     print("Gefundene Zeiteinträge:")
 
-        current += timedelta(days=1)
+    #     for entry in all_entries:
+    #         duration = entry["timeInterval"]["duration"]
 
-    print()
-    print("Gesamte Einträge:", len(all_entries))
+    # if entry["userName"] == USERNAME:
+    #     print(
+    #         f"{entry['userName']} | "
+    #         f"{entry['timeInterval']['start']} | "
+    #         f"{entry['projectName']} | "
+    #         f"{duration/3600:.2f}h"
+    #     )
+    tracked_seconds = sum(
+        e["timeInterval"]["duration"] for e in all_entries if e["userName"] == USERNAME
+    )
+    tracked_vacation_hours = sum(
+        e["timeInterval"]["duration"]
+        for e in all_entries
+        if e.get("userName", "").strip() == USERNAME.strip()
+        and e.get("projectName", "") == "Ferien"
+    )
+    tracked_bankHoliday_hours = sum(
+        e["timeInterval"]["duration"]
+        for e in all_entries
+        if e.get("userName", "").strip() == USERNAME.strip()
+        and e.get("projectName", "") == "Feiertag"
+    )
 
-    if all_entries:
+    return (
+        tracked_seconds / 3600,
+        tracked_vacation_hours / 3600,
+        tracked_bankHoliday_hours / 3600,
+    )
 
-        print("Ältester:", min(e["timeInterval"]["start"] for e in all_entries))
 
-        print("Neuester:", max(e["timeInterval"]["start"] for e in all_entries))
+def fetch_entries(url, headers, start, end, USERNAME):
+    """Lädt alle Einträge eines Zeitraums.
+    Falls >=50 Einträge zurückkommen, wird der Zeitraum halbiert.
+    """
+    # all_entries = []
 
-    tracked_seconds = 0
+    payload = {
+        "dateRangeStart": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "dateRangeEnd": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "detailedFilter": {"users": [USERNAME]},
+        "page": 1,
+        "pageSize": 50,
+    }
 
-    if show_output:
-        print("Gefundene Zeiteinträge:")
+    response = requests.post(url, headers=headers, json=payload)
 
-    for entry in all_entries:
+    if response.status_code != 200:
+        raise RuntimeError(response.text)
 
-        if entry["userId"] != USER_ID:
-            continue
+    entries = response.json().get("timeentries", [])
 
-        duration = entry["timeInterval"]["duration"]
+    # Zeitraum vollständig
+    if len(entries) < 50:
+        # print(
+        #     f"{payload['dateRangeStart']} - {payload['dateRangeEnd']} : {len(entries)}"
+        # )
+        return entries
 
-        tracked_seconds += duration
+    # Zeitraum halbieren
+    mid = start + (end - start) / 2
 
-        if show_output:
-            print(
-                f"{entry['userName']} | "
-                f"{entry['timeInterval']['start']} | "
-                f"{duration/3600:.2f}h"
-            )
+    left = fetch_entries(url, headers, start, mid, USERNAME)
+    right = fetch_entries(url, headers, mid + timedelta(milliseconds=1), end, USERNAME)
 
-    return tracked_seconds / 3600
+    return left + right
