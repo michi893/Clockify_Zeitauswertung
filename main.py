@@ -76,8 +76,6 @@ def load_config():
     API_KEY, default_PENSUM = get_api_key()
     headers = {"X-Api-Key": API_KEY, "Content-Type": "application/json"}
     WORKSPACE_ID, USERNAME = get_workspace_id(API_KEY, headers)
-    USERNAME = "Katja "
-    # Usernames: David Niklaus, Katja , leana.leimer, Personaladmin  ACHTUNG: DER BENUTZTERNAME KATJA HAT EIN LEERZEICHEN AM ENDE!
     return default_PENSUM, headers, WORKSPACE_ID, USERNAME
 
 
