@@ -9,7 +9,7 @@ st.set_page_config(
 st.logo("cevi-logo.png")
 st.title("Clockify Zeitauswertung")
 
-from getApiKey import get_api_key
+# from getApiKey import get_api_key
 from getWorkspaceID import get_workspace_id
 from getDateRange import get_date_range
 from getDetailedReport import get_detailed_report
