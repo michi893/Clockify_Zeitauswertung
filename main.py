@@ -1,4 +1,7 @@
+from streamlit_local_storage import LocalStorage
 import streamlit as st
+
+local_storage = LocalStorage()
 
 st.set_page_config(
     page_title="Clockify Zeitauswertung", page_icon="cevi-logo.png", layout="centered"
@@ -14,11 +17,8 @@ from getExpectedHours import expected_hours
 
 
 def main():
-    default_PENSUM, headers, WORKSPACE_ID, USERNAME = load_config()
+    PENSUM, headers, WORKSPACE_ID, USERNAME = load_config()
 
-    PENSUM = st.number_input(
-        "Pensum (%)", min_value=10, max_value=100, value=default_PENSUM
-    )
     start_date, end_date = get_date_range()
 
     if st.button("Auswertung starten"):
@@ -73,10 +73,55 @@ def main():
 
 
 def load_config():
-    API_KEY, default_PENSUM = get_api_key()
-    headers = {"X-Api-Key": API_KEY, "Content-Type": "application/json"}
-    WORKSPACE_ID, USERNAME = get_workspace_id(API_KEY, headers)
-    return default_PENSUM, headers, WORKSPACE_ID, USERNAME
+    # API_KEY, default_PENSUM = get_api_key()
+    # headers = {"X-Api-Key": API_KEY, "Content-Type": "application/json"}
+    # WORKSPACE_ID, USERNAME = get_workspace_id(API_KEY, headers)
+    # return default_PENSUM, headers, WORKSPACE_ID, USERNAME
+
+    # Bereits gespeicherte Werte laden
+    api_key = local_storage.getItem("clockify_api_key")
+    pensum = local_storage.getItem("clockify_pensum")
+
+    with st.sidebar:
+        st.header("Einstellungen")
+
+        api_key = st.text_input(
+            "Clockify API-Key",
+            value=api_key if api_key else "",
+            type="password",
+        )
+
+        pensum = st.number_input(
+            "Pensum (%)",
+            min_value=10,
+            max_value=100,
+            value=int(pensum) if pensum else 100,
+        )
+
+        local_storage.setItem(
+            "clockify_api_key",
+            api_key,
+            key="save_api_key",
+        )
+
+        local_storage.setItem(
+            "clockify_pensum",
+            str(pensum),
+            key="save_pensum",
+        )
+
+    if not api_key:
+        st.warning("Bitte API-Key eingeben.")
+        st.stop()
+
+    headers = {
+        "X-Api-Key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    WORKSPACE_ID, USERNAME = get_workspace_id(api_key, headers)
+
+    return pensum, headers, WORKSPACE_ID, USERNAME
 
 
 def run_calculation(WORKSPACE_ID, USERNAME, headers, start_date, end_date, PENSUM):

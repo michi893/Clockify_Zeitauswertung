@@ -3,6 +3,7 @@ import sys
 import re
 from dotenv import load_dotenv
 
+
 def get_api_key():
     env_found = load_dotenv()
     API_KEY = os.getenv("API_KEY")
@@ -12,20 +13,26 @@ def get_api_key():
     if not env_found:
         print("FEHLER: Keine '.env'-Datei gefunden!")
         print(f"Gesucht wurde im Verzeichnis: {os.getcwd()}")
-        print(f"Speichere die Datei '.env' (Darf nicht umbenannt werden)im selben Verzeichnis wie 'main.py' und füge den persönlichen API-Key hinzu.")
+        print(
+            f"Speichere die Datei '.env' (Darf nicht umbenannt werden)im selben Verzeichnis wie 'main.py' und füge den persönlichen API-Key hinzu."
+        )
         sys.exit(1)
 
     # Test: Wurde der API-Key geladen?
     if not API_KEY:
         print("FEHLER: Der API_KEY wurde nicht gefunden.")
         print(f"Trage deinen persönlichen API-Key in der Datei '.env' ein.")
-        print(f"Überprüfe, dass deine Eingabe auf derselben Zeile wie 'API_KEY=' steht.")
+        print(
+            f"Überprüfe, dass deine Eingabe auf derselben Zeile wie 'API_KEY=' steht."
+        )
         sys.exit(1)
 
     # Test: Der API-Key enthält keine Leerzeichen,Tabulatoren oder Zeilenumbrüche?
     if re.search(r"\s", API_KEY):
         print("FEHLER: Der API_KEY enthält Leerzeichen oder andere Whitespace-Zeichen.")
-        print(f"Eintrag lautet nicht exakt 'API_KEY=<dein_api_key>'. Achtung:Keine Leerzeichen (Auch um das Gleichheitszeichen)!")
+        print(
+            f"Eintrag lautet nicht exakt 'API_KEY=<dein_api_key>'. Achtung:Keine Leerzeichen (Auch um das Gleichheitszeichen)!"
+        )
         sys.exit(1)
 
     # Test: Wurde das Pensum geladen?
